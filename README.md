@@ -25,11 +25,16 @@ Physics-based petal motion using Verlet integration
 SVG-to-3D conversion for floral patterns
 
 # Contact me 
-Contact: 2756447543@qq.com 
+📧 2756447543@qq.com
+
 License: MIT License © 2025 [xujuZhong]
 
 # Runtime Demo
+
 ![image](screen_snap.png)
+
 ![image](screen_snap2.png)
+
 ![image](screen_snap3.png)
+
 ![image](screen_snap4.png)
