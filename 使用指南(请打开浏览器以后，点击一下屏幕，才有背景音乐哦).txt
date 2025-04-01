@@ -1,0 +1,109 @@
+使用指南(请打开浏览器以后，点击一下屏幕，才有背景音乐哦)
+目前该版本还很不好，没有太多功能，请自行取用
+
+
+
+
+
+    class   FlyRose{
+        
+       group=[]
+       delta_z=2
+       rotate_z=3
+       maxZ=200
+       
+       maxLifeTime=100
+
+        CONFIG = {
+        total: 50,             // 总实例数量
+        heartScale: 150,          // 爱心整体缩放
+        outlineDensity: 0.9,    // 轮廓线密度
+        innerDensity: 0.8,      // 内部填充密度
+        positionNoise: 0.15,    // 位置随机偏移量
+        scaleRange: [0.6, 0.8] ,// 模型缩放范围
+        translate:-150,
+        Delta_Z:100,
+        yyy_:-20
+            };
+
+
+      constructor(model) {
+         this.model=model;
+         this.createHeartStructure(model);
+      }
+
+
+      update(step){
+
+      // this.createHeartStructure(this.model);
+
+        // let new_one=[];
+
+        // let group=FlyRose.group;
+
+        // for(let i=0;i<FlyRose.group.length;i++)
+        //  {
+           
+
+        //     group[i].lifetime--;
+            
+        //     if(group[i].lifetime<=0  ||  group[i].obj.position.z>=group[i].maxZ)
+        //      {
+        //       continue;
+        //      }
+            
+        //     group[i].obj.position.z+=FlyRose.delta_z;
+        //     group[i].obj.rotation.z=-FlyRose.rotate_z;
+        //     new_one.push(group[i]);
+        //  }
+
+
+        //  FlyRose.group=new_one;
+         
+      }
+
+
+
+     createHeartStructure(baseModel) {
+        // 生成爱心分布点
+        const points = generateHeartPoints(CONFIG.total);
+
+        points.forEach(pos => {
+            const instance = baseModel.clone();
+            
+            // 克隆材质
+            instance.traverse(child => {
+                if (child.material) child.material = child.material.clone();
+            });
+
+            // 位置设置
+            instance.position.set(
+                pos.x + (Math.random()-0.5)*CONFIG.positionNoise+ CONFIG.translate,
+              CONFIG. yyy_,
+                pos.z + (Math.random()-0.5)*CONFIG.positionNoise+CONFIG.Delta_Z
+            );
+
+            // 随机缩放和旋转
+            const scale = THREE.MathUtils.lerp(
+                CONFIG.scaleRange[0],
+                CONFIG.scaleRange[1],
+                Math.random()
+            );
+            instance.scale.set(scale, scale*1.5, scale);
+            instance.rotation.x=-90; 
+          // instance.translate.x=CONFIG.translate;
+          
+            FlyRose.group.push({obj:instance,
+                 lifetime: FlyRose.maxLifeTime* (Math.random()+0.3),
+                 maxZ: FlyRose.maxZ*(Math.random()+0.4)
+            });
+
+            scene.add(instance);
+        });
+
+      // animate();
+       }  
+
+
+}
+

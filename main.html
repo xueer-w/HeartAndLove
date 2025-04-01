@@ -1,0 +1,2425 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>程序员哪能没有自己的爱心！</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+        .hide {
+        display:none;
+          }
+    </style>
+</head>
+<body  id="body" >
+    <script>
+        // 1. 创建不可见的音频对象
+let audioElement = null;
+
+function playAudio(url) {
+  if (!audioElement) {
+    audioElement = new Audio(url);
+    audioElement.volume=0.2;
+    audioElement.loop=true;
+    audioElement.preload = 'auto'; // 预加载
+    audioElement.style.display = 'none'; // 确保无视觉元素
+  }
+  
+  // 处理浏览器自动播放限制
+  const playPromise = audioElement.play();
+  
+  if (playPromise !== undefined) {
+    playPromise.catch(error => {
+      // 需要用户交互后解锁音频
+      console.log('需要用户交互后才能播放');
+      unlockAudio();
+    });
+  }
+}
+
+// 2. 用户交互解锁机制
+function unlockAudio() {
+  const handler = () => {
+    // 触发一次空播放解除限制
+     audioElement.play().then(() => {
+      audioElement.pause();
+      audioElement.currentTime = 0;
+    });
+    
+    // 移除事件监听
+    document.removeEventListener('click', handler);
+    document.removeEventListener('touchstart', handler);
+  };
+
+  document.addEventListener('click', handler);
+  document.addEventListener('touchstart', handler);
+}
+
+// 使用示例（需用户点击后调用）
+document.getElementById('body').addEventListener('click', () => {
+  playAudio('heart.mp3');
+});
+
+    </script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- 引入 OBJ/MTL 加载器（注意路径匹配版本） -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/MTLLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+
+<script src="https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
+
+<!-- 或 jsDelivr 
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  -->
+
+
+    <script>
+
+
+        // 初始化场景
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x0a0a1a);
+        document.body.appendChild(renderer.domElement);
+
+        // 创建平行光
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 4.0);
+        directionalLight.position.set(10, 10, 40); // 光源位置
+        directionalLight.target.position.set(0, 0, 0); // 照射目标
+
+        // 启用阴影（可选）
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+
+        scene.add(directionalLight);
+        scene.add(directionalLight.target);
+
+
+        // 创建聚光灯
+        const spotLight = new THREE.SpotLight(0xff0000, 1.5, 20, Math.PI/4, 0.2, 0.5);
+        spotLight.position.set(0, 30, 0); // 从顶部向下照射
+        spotLight.target.position.set(0, 0, 0); // 聚焦到爱心中心
+
+        // 渐变衰减参数
+        spotLight.penumbra = 0.3; 
+        spotLight.decay = 1.5;
+
+        // 启用阴影（可选）
+        spotLight.castShadow = true;
+        spotLight.shadow.mapSize.width = 1024;
+        spotLight.shadow.mapSize.height = 1024;
+
+        scene.add(spotLight);
+        scene.add(spotLight.target);
+
+        const ambientLight = new THREE.AmbientLight(0xff0000, 0.5);
+        scene.add(ambientLight);
+
+
+        // 参数配置
+        // const CONFIG = {
+        //     baseHeight: 5,     // 基础旋转高度范围
+        //     maxHeight: 15,      // 最大上升高度
+        //     radius: 10,          // 圆柱半径
+        //     particleCount: 4000,
+        //     rotateSpeed: 0.02,
+        //     riseSpeed: 0.15,
+        //     fadeHeight: 8      // 开始淡出的高度
+        // };
+
+
+
+
+
+
+
+
+
+ function generatePinkColors(n,c_=200,s_=300,l_=30,big=40) {
+  // HSL颜色转换工具函数
+  const hslToRgb = (h, s, l) => {
+    h /= 360, s /= 100, l /= 100;
+    let r, g, b;
+    if (s === 0) {
+      r = g = b = l;
+    } else {
+      const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1/3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1/3);
+    }
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+  };
+
+  // 生成颜色数组
+  const colors = [];
+  for (let i = 0; i < n; i++) {
+    // 控制颜色在粉红色系范围
+    const hue =c_+ Math.random() * big;   // 色相：330°（品红）~360°（红）
+    const saturation = s_ + Math.random() * 60; // 饱和度：50%~90%
+    const lightness = l_+ Math.random() * 30;  // 明度：40%~70%
+
+    // 转换为RGB并压制成粉色系
+    const [r, g, b] = hslToRgb(hue, saturation, lightness);
+    const pinkBoost = Math.random() * 0.1; // 增加红色权重
+    const finalR = Math.min(255, r + 255 * pinkBoost);
+    const finalG = Math.max(0, g - 80 * pinkBoost);
+    const finalB = Math.max(0, b - 80 * pinkBoost);
+
+    colors.push([Math.round(finalR),Math.round(finalG),Math.round(finalB)]);
+  }
+
+
+  //console.log(colors);
+  return colors;
+}
+
+
+
+
+
+
+
+        // 粒子系统
+        class VortexParticles {
+            constructor() {
+              
+                this.init();
+            }
+
+            initParticles() {
+                // 开发过程测试用的
+
+                const color = new THREE.Color();
+                
+                for(let i = 0; i < CONFIG.particleCount; i++) {
+                    const i3 = i * 3;
+                    // 初始位置在底部区域
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = CONFIG.radius * (0.8 + Math.random()*0.2);
+                    const y = 0;//Math.random() * CONFIG.baseHeight;
+                    
+                    this.particles[i3] = radius * Math.cos(angle);
+                    this.particles[i3 + 1] = y;
+                    this.particles[i3 + 2] = radius * Math.sin(angle);
+
+                    // 初始颜色（带透明度）
+                    const hue = 0.6 + (y/CONFIG.baseHeight)*0.2;
+                    color.setHSL(hue, 0.8, 0.6);
+                    color.toArray(this.colors, i3);
+                    
+                    this.lifetimes[i] = 1; // 初始生命周期
+        
+                }
+
+                this.geometry.setAttribute('position', 
+                    new THREE.BufferAttribute(this.particles, 3));
+                this.geometry.setAttribute('color', 
+                    new THREE.BufferAttribute(this.colors, 3));
+                  
+                this.geometry.setAttribute('zxj', new THREE.BufferAttribute(this.colors, 3));
+
+                this.material = new THREE.PointsMaterial({
+                    size: 0.1,
+                    vertexColors: true,
+                    transparent: true,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false,
+                    opacity: 0.8
+                });
+
+                this.mesh = new THREE.Points(this.geometry, this.material);
+                scene.add(this.mesh);
+            }
+
+            update() {
+                const positions = this.geometry.attributes.position.array;
+                const colors = this.geometry.attributes.color.array;
+                const color = new THREE.Color();
+
+                const  zxj=this.geometry.attributes.zxj.array;
+
+
+                for(let i = 0; i < CONFIG.particleCount; i++) {
+
+                    console.log(zxj[i])
+
+                    const i3 = i * 3;
+                    let x = positions[i3];
+                    let y = positions[i3 + 1];
+                    let z = positions[i3 + 2];
+
+                    // 螺旋运动
+                    const angle = Math.atan2(z, x) + CONFIG.rotateSpeed;
+                    const radius = Math.sqrt(x*x + z*z);
+                    
+                    // 保持圆柱半径
+                    x = CONFIG.radius * Math.cos(angle);
+                    z = CONFIG.radius * Math.sin(angle);
+                    
+                    // 上升运动
+                    y += CONFIG.riseSpeed * (0.5 + Math.sin(y)*0.3);
+                    
+                    // 生命周期管理
+                    if(y > CONFIG.maxHeight) {
+                        this.resetParticle(i3);
+                        continue;
+                    }
+
+                    // 高度相关透明度
+                    let alpha = 1;
+                    if(y > CONFIG.fadeHeight) {
+                        alpha = 1 - ((y - CONFIG.fadeHeight)/(CONFIG.maxHeight - CONFIG.fadeHeight));
+                    }
+
+                    // 更新位置
+                    positions[i3] = x;
+                    positions[i3 + 1] = y;
+                    positions[i3 + 2] = z;
+
+                    // 更新颜色（带透明度渐变）
+                    const hue = 0.6 + (y/CONFIG.maxHeight)*0.3;
+                    color.setHSL(hue, 0.8, 0.5 * alpha + 0.3);
+                    color.toArray(colors, i3);
+                }
+
+                this.geometry.attributes.position.needsUpdate = true;
+                this.geometry.attributes.color.needsUpdate = true;
+            }
+
+            resetParticle(i3) {
+                // 重置到底部区域
+                const angle = Math.random() * Math.PI * 2;
+                const radius = CONFIG.radius * (0.8 + Math.random()*0.2);
+                
+                this.particles[i3] = radius * Math.cos(angle);
+                this.particles[i3 + 1] = 0//Math.random() * CONFIG.baseHeight;
+                this.particles[i3 + 2] = radius * Math.sin(angle);
+            }
+          
+      
+           test(){
+
+            // 测试程序
+
+
+            let cnt= parseInt(500* Math.random());
+            
+            const   radius=10;
+
+            let position=[];
+           let colors=[];
+           
+           
+           
+            for(let i=0;i<cnt;i++)
+           {
+              const  theta=2*Math.PI*Math.random();
+              position.push(radius*Math .cos(theta),0,radius*Math.sin(theta));
+               
+              let color=new THREE.Color();
+              color.setRGB(255*Math.random(),255*Math.random(),255*Math.random());
+              colors.push(color);
+           }
+
+
+    
+           let   position2=new Float32Array(position.length);
+           let  colors2=new Float32Array(colors.length*3);
+
+      
+           for(let i=0;i<position.length;i++)
+               position2[i]=position[i],
+               colors[parseInt(i/3)].toArray(colors2,parseInt(i/3));
+            
+                
+        this.geometry.setAttribute('position', 
+        new THREE.BufferAttribute(position2, 3));
+
+        this.geometry.setAttribute('color', 
+        new THREE.BufferAttribute(colors2, 3));
+
+    
+       const pos= this.geometry.attributes.position.array;
+      
+    //  for(let i=0;i<3;i++)
+    //     console.log(pos[i]);
+
+
+
+
+        if(this.mesh===undefined)
+        {  
+            this.material = new THREE.PointsMaterial({
+                    size: 0.3,
+                    vertexColors: true,
+                    transparent: true,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false,
+                    opacity: 0.8
+                });
+
+           this.mesh = new THREE.Points(this.geometry, this.material);
+          scene.add(this.mesh);
+        }
+
+
+        }
+
+        randomInt(a,b){
+           return   parseInt (Math.random()*(b-a+1) + a);
+        }
+
+        randomFloat(a,b){
+           return   (Math.random()*(b-a) + a);
+        }
+  
+        randomColor(c1,c2){
+           let  s=[];
+           for(let i=0;i<c2.length;i++)
+             s[i]=c2[i]-c1[i];
+            
+            const len=Math.random();
+            for(let i=0;i<c2.length;i++)
+            {  s[i]=s[i]*len+c1[i];
+                // s[i]=parseInt(s[i]);
+            }
+
+           return  s; 
+        }
+
+
+        init(){
+          this.baseBurnFrame=1000;
+          this.innerR=300;
+          this.outerR=320;
+          this.maxLifeTime=200;
+          this.zSpeed=0.9;
+          this.angleSpeed=0.1;
+          
+          this.maxHeight=300;
+          this.baseYspeed=0.1;
+          
+          this.geometry = new THREE.BufferGeometry();
+              
+          let  position=new Float32Array();
+          let color=new Float32Array();
+          let lifetime =new Float32Array();
+          let yspeed =new Float32Array();
+          let anglespeed=new Float32Array();
+          let heights=new Float32Array();
+          this.geometry.setAttribute("position", new THREE.BufferAttribute(position,3));
+          this.geometry.setAttribute("color",new THREE.BufferAttribute(color,3));
+          this.geometry.setAttribute("lifetime",new THREE.BufferAttribute(lifetime,1));
+          this.geometry.setAttribute("yspeed",new THREE.BufferAttribute(yspeed,1));
+          this.geometry.setAttribute("anglespeed",new THREE.BufferAttribute(anglespeed,1));
+            this.geometry.setAttribute("height",new THREE.BufferAttribute(heights,1));
+            this.material = new THREE.PointsMaterial({
+                size: 0.1,
+                vertexColors: true,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                opacity: 0.8
+            });
+
+            this.mesh = new THREE.Points(this.geometry, this.material);
+            scene.add(this.mesh);
+        }
+        
+
+        weight_randxom(a,b,p){
+           return  Math.random()<p?a:b;
+        }
+
+
+        update_(step){
+
+        let positions=[]
+        let  colors=[]
+        let   lifetimes=[]
+        let yspeed=[]
+        let anglespeed=[]
+        let height=[];
+        
+        const  frame_new_burn=parseInt(  this.baseBurnFrame*(1+Math.random()));
+        
+        let for_colors=generatePinkColors(frame_new_burn,200,300,40,25);
+
+
+        //一下为生成粒子的几何数据(点位置，颜色等)
+        for( let i=0;i< frame_new_burn;i++)
+        {
+            const  radius=  this.randomFloat(this.innerR,this.outerR);
+        
+            const  theta=Math.random()*2*Math.PI;
+            const   p=[];
+            p.push(radius* Math.cos(theta), 0,  radius*Math.sin(theta));
+            positions.push(p);
+            // const minColor=[204,0,0];
+            // const maxColor=[255,255,255];
+
+            colors.push(for_colors[i]);
+        
+            lifetimes.push(this.maxLifeTime*(Math.random()+0.01));
+            yspeed.push((0.2+Math.random())*this.baseYspeed);
+            anglespeed.push((0.2+this.weight_randxom(0.5,0.2,0.8))*this.angleSpeed);
+            
+            height.push( (0.001+  this.weight_randxom(0.4,1,0.9)*(Math.random()+0.5) )*this.maxHeight );
+        }
+
+
+      //  this.heart(positions,colors, lifetimes,heights,angleSpeed,yspeed);
+
+
+
+        const old_positions = this.geometry.attributes.position.array;
+        const  old_colors=this.geometry.attributes.color.array;
+        const   old_lifetimes=this.geometry.attributes.lifetime.array;
+        const   old_yspeed=this.geometry.attributes.yspeed.array;
+        const   old_anglespeed=this.geometry.attributes.anglespeed.array;
+        const  old_height=this.geometry.attributes.height.array;
+        
+        for(let i=0;i<old_lifetimes.length;i++)
+           {
+            
+            old_lifetimes[i]--;
+
+           if(old_lifetimes[i]>0 && old_positions[i*3+1]<=old_height[i])
+               {
+                positions.push(this.new_pos(step,[old_positions[i*3],old_positions[i*3+1],old_positions[i*3+2]], old_yspeed[i] ,old_anglespeed[i]));
+                colors.push( [old_colors[i*3],old_colors[i*3+1],old_colors[i*3+2]]);
+                lifetimes.push(old_lifetimes[i]);
+                yspeed.push(old_yspeed[i]);
+                anglespeed.push(old_anglespeed[i]);
+                height.push(old_height[i]);
+                }
+           }
+
+     
+      let  position_array=new Float32Array(positions.length*3);
+      let  color_array=new Float32Array(colors.length*3);
+      let   lifetime_array=new Float32Array(lifetimes.length);
+      let yspeed_array=new Float32Array(yspeed.length);
+      let anglespeed_array=new Float32Array(anglespeed.length);
+       let  height_array=new Float32Array(height.length);
+
+      for(let i=0;i<lifetimes.length;i++)
+      {  
+        lifetime_array[i]=lifetimes[i];
+         yspeed_array[i]=yspeed[i];
+         anglespeed_array[i]=anglespeed[i];
+         height_array[i]=height[i];
+
+        for(let j=0;j<colors[i].length;j++)
+           color_array[i*3+j]=colors[i][j];
+
+        for(let j=0;j<positions[i].length;j++)
+         position_array [i*3+j]=positions[i][j];
+      }  
+
+    //   for(let i=0;i<lifetime_array.length;i++)
+    //     console.log(lifetime_array[i]+"  len");
+
+    this.geometry.setAttribute("position", new THREE.BufferAttribute(position_array,3));
+    this.geometry.setAttribute("color",new THREE.BufferAttribute(color_array,3));
+    this.geometry.setAttribute("lifetime",new THREE.BufferAttribute(lifetime_array,1));
+    this.geometry.setAttribute("yspeed",new THREE.BufferAttribute(yspeed_array,1));
+    this.geometry.setAttribute("anglespeed",new THREE.BufferAttribute(anglespeed_array,1));
+    this.geometry.setAttribute("height",new THREE.BufferAttribute(height_array,1));
+
+    this.geometry.attributes.position.needsUpdate = true;
+    this.geometry.attributes.color.needsUpdate = true;
+    this.geometry.attributes.lifetime.needsUpdate = true;
+    this.geometry.attributes.yspeed.needsUpdate = true;
+    this.geometry.attributes.anglespeed.needsUpdate = true;
+    this.geometry.attributes.height.needsUpdate = true;
+    }
+
+
+    
+
+        new_pos(step,pos, yspeed,anglespeed){
+        
+
+            const angle= Math.atan2(pos[2],pos[0])-anglespeed*1;
+
+            const radius= Math.sqrt( pos[0]*pos[0]+pos[2]*pos[2]);
+            let p=[]
+
+            p.push(radius* Math.cos(angle), (pos[1]+yspeed)%this.maxHeight,  radius*Math.sin(angle));
+
+            //console.log(p[0]+" after");
+            return  p;
+        }
+
+        }
+
+
+
+
+
+
+
+
+
+
+        class Heart{
+
+         constructor(){
+            this.init();
+         }
+            init(){
+          this.baseBurnFrame=1000;
+          this.innerR=100;
+          this.outerR=110;
+          this.maxLifeTime=50;
+          this.zSpeed=0.1;
+          this.angleSpeed=0;
+          this.delta_y=200;
+          this.delta_z=0;
+
+
+          this.maxHeight=70;
+          this.baseYspeed=0.1;
+          
+          this.geometry = new THREE.BufferGeometry();
+              
+          let  position=new Float32Array();
+          let color=new Float32Array();
+          let lifetime =new Float32Array();
+          let yspeed =new Float32Array();
+          let anglespeed=new Float32Array();
+          let heights=new Float32Array();
+          this.geometry.setAttribute("position", new THREE.BufferAttribute(position,3));
+          this.geometry.setAttribute("color",new THREE.BufferAttribute(color,3));
+          this.geometry.setAttribute("lifetime",new THREE.BufferAttribute(lifetime,1));
+          this.geometry.setAttribute("yspeed",new THREE.BufferAttribute(yspeed,1));
+          this.geometry.setAttribute("anglespeed",new THREE.BufferAttribute(anglespeed,1));
+            this.geometry.setAttribute("height",new THREE.BufferAttribute(heights,1));
+            this.material = new THREE.PointsMaterial({
+                size: 0.4,
+                vertexColors: true,
+                transparent: true,
+                metalness: 0.3,
+                roughness: 0.6,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                opacity: 0.9
+            });
+
+
+            // this.material = new THREE.MeshStandardMaterial({
+            // color: 0xffffff,
+            // metalness: 0.3,
+            // roughness: 0.6,
+            // vertexColors: true, // 保留顶点颜色
+            // transparent: true,
+            // opacity: 0.8
+            //  });
+
+
+            this.mesh = new THREE.Points(this.geometry, this.material);
+            scene.add(this.mesh);
+        }
+        
+
+
+generateDepthAwarePink(depthFactor) {
+        // 核心色：深粉色 -> 浅粉色渐变
+        const baseHue = 330 + depthFactor * 20; // 330°~350°
+        const saturation = 300 - depthFactor * 20; // 80%~60%
+        const lightness = 40 + depthFactor * 30;  // 40%~70%
+        
+        const hslToRgb = (h, s, l) => {
+        h /= 360, s /= 100, l /= 100;
+        let r, g, b;
+        if (s === 0) {
+        r = g = b = l;
+        } else {
+        const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+        }
+        return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+        };
+
+        
+        // HSL转RGB（参考之前代码）
+        const [r, g, b] = hslToRgb(baseHue, saturation, lightness);
+        return [r, g, b];
+}
+
+
+
+
+weight_random(a,b,p){
+           return  Math.random()<p?a:b;
+        }
+
+
+
+ update_(step){
+
+            let positions=[]
+            let  colors=[]
+            let   lifetimes=[]
+            let yspeed=[]
+            let anglespeed=[]
+            let height=[];
+            
+            const  frame_new_burn=parseInt(  this.baseBurnFrame*(1+Math.random()));
+            
+            let for_colors=generatePinkColors(frame_new_burn,330,200,20);
+       
+
+            
+            for( let i=0;i< frame_new_burn;i++)
+            {
+                // 基础爱心形状参数
+                const theta = Math.random() * 2 * Math.PI; // 随机角度
+                const a = this.randomFloat(this.innerR, this.outerR);     // 爱心大小波动系数
+                const stretchX = 1.15 + Math.random() * 0.3; // X轴拉伸
+                const stretchY= 1.0 + Math.random() * 0.3; // Z轴压缩
+                
+                // 爱心极坐标转三维坐标
+                const r = a * (1 - Math.sin(theta)); 
+                const x = r * Math.cos(theta) * stretchX;
+                const y= r * Math.sin(theta) * stretchY+this.delta_y;
+            
+                const z =this.delta_z; // 初始在底部
+                
+                positions.push([x, y, z]);
+                
+                // 动态参数（增加跳动相关参数）
+                 yspeed.push((0.4 + Math.random() * 0.6) * this.baseYspeed);
+                 //yspeed.push(0);
+                //anglespeed.push((0.3 + this.weight_random(0.5, 0.2, 0.8)) * this.angleSpeed);
+                anglespeed.push(0);
+
+                height.push(
+                    (0.5 + this.weight_random(0.2, 1, 0.9) * (Math.random() + 0.5)) * this.maxHeight
+                );
+                
+                // 颜色渐变增强
+                const depthColorFactor = Math.sqrt(x**2 + z**2) / this.maxRadius;
+                //colors.push(this.generateDepthAwarePink(depthColorFactor)); 
+                 colors.push(for_colors[i]);
+                lifetimes.push(this.maxLifeTime*(Math.random()+0.01));
+
+            }
+
+
+
+            spotLight.intensity = 1.2 + Math.sin(step * 5) * 0.5;
+
+            // 平行光颜色渐变
+            directionalLight.color.setHSL(
+            Math.sin(this.step * 0.5) * 0.1 + 0.6, // 色相轻微波动
+            0.8, // 饱和度
+            0.7  // 明度
+            );
+
+
+            const old_positions = this.geometry.attributes.position.array;
+            const  old_colors=this.geometry.attributes.color.array;
+            const   old_lifetimes=this.geometry.attributes.lifetime.array;
+            const   old_yspeed=this.geometry.attributes.yspeed.array;
+            const   old_anglespeed=this.geometry.attributes.anglespeed.array;
+            const  old_height=this.geometry.attributes.height.array;
+            
+            for(let i=0;i<old_lifetimes.length;i++)
+                {
+                
+                old_lifetimes[i]--;
+
+                if(old_lifetimes[i]>0 &&  Math.abs( old_positions[i*3+2])<=old_height[i])
+                    {
+                    positions.push(this.new_pos(step,[old_positions[i*3],old_positions[i*3+1],old_positions[i*3+2]], old_yspeed[i] ,old_anglespeed[i]));
+                    colors.push( [old_colors[i*3],old_colors[i*3+1],old_colors[i*3+2]]);
+                    lifetimes.push(old_lifetimes[i]);
+                    yspeed.push(old_yspeed[i]);
+                    anglespeed.push(old_anglespeed[i]);
+                    height.push(old_height[i]);
+                    }
+                }
+
+
+            let  position_array=new Float32Array(positions.length*3);
+            let  color_array=new Float32Array(colors.length*3);
+            let   lifetime_array=new Float32Array(lifetimes.length);
+            let yspeed_array=new Float32Array(yspeed.length);
+            let anglespeed_array=new Float32Array(anglespeed.length);
+            let  height_array=new Float32Array(height.length);
+
+            for(let i=0;i<lifetimes.length;i++)
+            {  
+            lifetime_array[i]=lifetimes[i];
+            yspeed_array[i]=yspeed[i];
+            anglespeed_array[i]=anglespeed[i];
+            height_array[i]=height[i];
+
+            for(let j=0;j<colors[i].length;j++)
+                color_array[i*3+j]=colors[i][j];
+
+            for(let j=0;j<positions[i].length;j++)
+            position_array [i*3+j]=positions[i][j];
+            }  
+
+            //   for(let i=0;i<lifetime_array.length;i++)
+            //     console.log(lifetime_array[i]+"  len");
+
+            this.geometry.setAttribute("position", new THREE.BufferAttribute(position_array,3));
+            this.geometry.setAttribute("color",new THREE.BufferAttribute(color_array,3));
+            this.geometry.setAttribute("lifetime",new THREE.BufferAttribute(lifetime_array,1));
+            this.geometry.setAttribute("yspeed",new THREE.BufferAttribute(yspeed_array,1));
+            this.geometry.setAttribute("anglespeed",new THREE.BufferAttribute(anglespeed_array,1));
+            this.geometry.setAttribute("height",new THREE.BufferAttribute(height_array,1));
+
+            this.geometry.attributes.position.needsUpdate = true;
+            this.geometry.attributes.color.needsUpdate = true;
+            this.geometry.attributes.lifetime.needsUpdate = true;
+            this.geometry.attributes.yspeed.needsUpdate = true;
+            this.geometry.attributes.anglespeed.needsUpdate = true;
+            this.geometry.attributes.height.needsUpdate = true;
+
+            this.geometry.computeVertexNormals();
+}
+
+
+randomFloat(a,b){
+           return   (Math.random()*(b-a) + a);
+        }
+  
+ 
+new_pos(step, pos, yspeed, anglespeed) {
+// 基础旋转
+const angle = Math.atan2(pos[1], pos[0]) - anglespeed;
+const radius = Math.sqrt(pos[0]**2 + pos[1]**2);
+
+// 跳动曲线：正弦波 + 衰减
+const jumpFactor = Math.sin(step * 0.1) * (1 - pos[2]/this.maxHeight);
+const verticalSpeed = yspeed + jumpFactor * 0.1;
+
+// 爱心收缩效果（高度影响半径）
+const squeeze = 1 - (pos[2]/this.maxHeight) * 0.3;
+const newRadius = radius * squeeze;
+
+return [
+ newRadius * Math.cos(angle), 
+ newRadius * Math.sin(angle),
+ Math.min(pos[2] + verticalSpeed, this.maxHeight), // 限制最大高度
+];
+}
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 该3D粒子系统没有实现好 呜呜┭┮﹏┭┮ 请不要使用  但可以参考实现
+
+class HeartParticleSystem {
+  constructor(maxParticles = 2000) {
+    this.maxParticles = maxParticles;
+    this.time = 0;
+    this.beatFrequency = 1.5; // 每秒跳动次数
+    this.initGeometry();
+    this.initMaterial();
+  }
+
+  // 初始化爱心几何体
+  initGeometry() {
+    this.geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(this.maxParticles * 3);
+    const colors = new Float32Array(this.maxParticles * 3);
+    const scales = new Float32Array(this.maxParticles);
+
+    // 生成爱心初始点云（参数方程）
+    let pIdx = 0;
+    for (let i = 0; i < this.maxParticles; i++) {
+      const u = Math.random() * Math.PI * 2;
+      const v = Math.random() * Math.PI;
+      
+      // 爱心参数方程（3D化）
+      const x = 16 * Math.pow(Math.sin(v), 3);
+      const y = 13 * Math.cos(v) - 5 * Math.cos(2*v) - 2 * Math.cos(3*v) - Math.cos(4*v);
+      const z = 16 * Math.cos(u) * Math.pow(Math.sin(v), 2);
+
+      // 随机偏移增加立体感
+      const offset = 0.3;
+      positions[pIdx] = x + (Math.random() - 0.5) * offset;
+      positions[pIdx + 1] = y + (Math.random() - 0.5) * offset;
+      positions[pIdx + 2] = z + (Math.random() - 0.5) * offset;
+
+      // 颜色渐变（核心到边缘）
+      const depth = Math.sqrt(x*x + y*y + z*z) / 20;
+      colors[pIdx] = 1.0; // R
+      colors[pIdx + 1] = 0.3 + depth * 0.7; // G
+      colors[pIdx + 2] = 0.4 + depth * 0.6; // B
+
+      scales[i] = 0.5 + Math.random() * 1.5;
+      pIdx += 3;
+    }
+
+    this.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    this.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    this.geometry.setAttribute('scale', new THREE.BufferAttribute(scales, 1));
+  }
+
+  // 初始化材质
+  initMaterial() {
+    this.material = new THREE.PointsMaterial({
+      size: 0.5,
+      vertexColors: true,
+      sizeAttenuation: true,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      opacity: 0.8
+    });
+    this.points = new THREE.Points(this.geometry, this.material);
+  }
+
+  // 更新跳动动画
+  update(deltaTime) {
+    this.time += deltaTime;
+    
+    // 心跳波形（组合正弦波）
+    const beatWave = 
+      Math.sin(this.time * Math.PI * 2 * this.beatFrequency) * 0.5 + 
+      Math.sin(this.time * Math.PI * 4 * this.beatFrequency) * 0.2;
+    
+    const positions = this.geometry.attributes.position.array;
+    const scales = this.geometry.attributes.scale.array;
+
+    // 动态变形计算
+    for (let i = 0; i < positions.length; i += 3) {
+      // 原始坐标
+      const x0 = positions[i];
+      const y0 = positions[i + 1];
+      const z0 = positions[i + 2];
+
+      // 跳动变形
+      const beatFactor = 1.0 + beatWave * 0.3;
+      const squash = Math.pow(Math.abs(y0 / 20), 2); // Y轴压缩系数
+
+      // 动态位置
+      positions[i] = x0 * beatFactor * (1 - squash * 0.2);
+      positions[i + 1] = y0 * beatFactor * 0.8;
+      positions[i + 2] = z0 * beatFactor * (1 - squash * 0.2);
+
+      // 动态缩放
+      scales[i / 3] = (0.5 + Math.sin(this.time * 5 + x0) * 0.3 + 0.7);
+    }
+
+    // 标记需要更新
+    this.geometry.attributes.position.needsUpdate = true;
+    this.geometry.attributes.scale.needsUpdate = true;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // 模型加载函数
+// function loadRoseModel() {
+//     // 先加载MTL材质
+//     new THREE.MTLLoader().load(
+//         'models/10452_Rose_Bush_v1_Iteration2.mtl',
+//         function(materials) {
+//             materials.preload();
+            
+//             // 然后加载OBJ模型
+//             new THREE.OBJLoader()
+//                 .setMaterials(materials)
+//                 .load(
+//                     'models/10452_Rose_Bush_v1_Iteration2.obj',
+//                     function(object) {
+//                         // 应用纹理贴图
+//                         object.traverse(function(child) {
+//                             if (child instanceof THREE.Mesh) {
+//                                 new THREE.TextureLoader().load(
+//                                     'models/10452_Rose_Bush_v1_Diffuse.jpg',
+//                                     function(texture) {
+//                                         texture.flipY = false; // 根据模型需要调整
+//                                         child.material.map = texture;
+//                                         child.material.needsUpdate = true;
+//                                     }
+//                                 );
+//                             }
+//                         });
+
+//                         // 缩放原始模型
+//                         object.scale.set(0.5, 0.5, 0.5);
+                        
+//                         object.rotation.set(-90,0,0);
+
+//                         // 创建3个实例并定位
+//                         createInstances(object);
+//                     }
+//                 );
+//         }
+//     );
+// }
+
+// // 创建模型实例
+// function createInstances(originalModel) {
+//     const positions = [
+//         { x: -5, y: 0, z: 0 },
+//         { x: 0, y: 0, z: 0 },
+//         { x: 5, y: 0, z: 0 }
+//     ];
+
+//     positions.forEach(function(pos) {
+//         const instance = originalModel.clone();
+        
+//         // 克隆材质（重要！）
+//         instance.traverse(function(child) {
+//             if (child.material) {
+//                 child.material = child.material.clone();
+//             }
+//         });
+
+//         instance.position.set(pos.x, pos.y, pos.z);
+//         scene.add(instance);
+//     });
+
+//     // 开始动画循环
+//    /// animate();
+// }
+
+const CONFIG= {
+    layers: 50,                // 垂直层数
+    perLayer: 50,             // 每层实例数
+    heartScale: 8,            // 爱心整体尺寸
+    maxHeight: 10,             // 爱心高度
+    modelScale: 0.5,         // 基础模型缩放
+    innerDensity: 0.6,        // 内部填充密度
+    rotationSpeed: 0.005,     // 旋转速度
+    floatSpeed: 0.3           // 浮动速度
+};
+
+
+
+
+function loadBaseModel() {
+    new THREE.MTLLoader()
+        .load('models/10452_Rose_Bush_v1_Iteration2.mtl', materials => {
+            materials.preload();
+            
+            new THREE.OBJLoader()
+                .setMaterials(materials)
+                .load('models/10452_Rose_Bush_v1_Iteration2.obj', obj => {
+                    obj.traverse(child => {
+                        if (child.isMesh) {
+                            new THREE.TextureLoader().load(
+                                'models/10452_Rose_Bush_v1_Diffuse.jpg',
+                                texture => {
+                                    texture.flipY = false;
+                                    child.material.map = texture;
+                                    child.material.needsUpdate = true;
+                                }
+                            );
+                        }
+                    });
+                    create3DHeart(obj);
+                });
+        });
+}
+
+function create3DHeart(baseModel) {
+    // 生成三维爱心点阵
+    for(let layer = 0; layer < CONFIG.layers; layer++) {
+        const heightRatio = layer / CONFIG.layers;
+        const currentScale = CONFIG.heartScale * (1 - heightRatio * 0.3);
+        const yPos = CONFIG.maxHeight * (heightRatio - 0.5);
+
+        // 每层生成点
+        const points = generateLayerPoints(
+            CONFIG.perLayer, 
+            currentScale,
+            heightRatio
+        );
+
+        points.forEach(pos => {
+            const instance = baseModel.clone();
+            
+            // 深度克隆材质
+            instance.traverse(child => {
+                if (child.material) child.material = child.material.clone();
+            });
+
+            // 位置计算
+            instance.position.set(
+                pos.x + (Math.random()-0.5)*0.3, // 随机位置偏移
+                yPos + (Math.random()-0.5)*0.5,
+                pos.z + (Math.random()-0.5)*0.3
+            );
+
+            // 随机缩放旋转
+            const scale = CONFIG.modelScale * (0.7 + Math.random()*0.5);
+            instance.scale.set(scale, scale, scale);
+            instance.rotation.set(
+                Math.random() * Math.PI/8,
+                Math.random() * Math.PI * 2,
+                Math.random() * Math.PI/8
+            );
+
+            scene.add(instance);
+        });
+    }
+
+    // 添加核心光效
+    const heartCore = new THREE.PointLight(0xff6666, 2, 10);
+    heartCore.position.set(0, 0, 0);
+    scene.add(heartCore);
+
+    //animate();
+}
+
+function generateLayerPoints(count, scale, densityFactor) {
+    const points = [];
+    const angleStep = (Math.PI * 2) / count;
+    const density = CONFIG.innerDensity * densityFactor;
+
+    for(let i = 0; i < count; i++) {
+        const t = angleStep * i;
+        // 三维爱心参数方程
+        const x = 16 * Math.pow(Math.sin(t), 3) * scale;
+        const z = (13 * Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t)) * scale;
+        
+        // 根据密度随机筛选内部点
+        if(Math.random() < density) {
+            points.push(new THREE.Vector3(
+                x * (0.8 + Math.random()*0.4),
+                0,
+                z * (0.8 + Math.random()*0.4)
+            ));
+        }
+    }
+    return points;
+}
+
+
+
+
+
+
+
+
+
+// 使用示例
+// const heartSystem = new HeartParticleSystem(5000);
+// scene.add(heartSystem.points);
+
+        //创建粒子系统
+       const vortex = new VortexParticles();
+
+        const  heart =new Heart();
+        // 相机设置
+        camera.position.set(10,190, 400);
+        camera.lookAt(0, 0, 0);
+
+
+
+
+   //loadRoseModel();
+
+ //  loadBaseModel();
+
+
+
+  
+
+     
+   function load2(){
+
+    const CONFIG = {
+    total: 500,             // 总实例数量
+    heartScale: 150,          // 爱心整体缩放
+    outlineDensity: 0.9,    // 轮廓线密度
+    innerDensity: 0.8,      // 内部填充密度
+    positionNoise: 0.15,    // 位置随机偏移量
+    scaleRange: [0.6, 0.8] ,// 模型缩放范围
+    translate:-150,
+    Delta_Z:100,
+    yyy_:-20
+};
+
+
+   function loadBaseModel() {
+    new THREE.MTLLoader()
+        .load('models/10452_Rose_Bush_v1_Iteration2.mtl', materials => {
+            materials.preload();
+            
+            new THREE.OBJLoader()
+                .setMaterials(materials)
+                .load('models/10452_Rose_Bush_v1_Iteration2.obj', obj => {
+                    obj.traverse(child => {
+                        if (child.isMesh) {
+                            new THREE.TextureLoader().load(
+                                'models/10452_Rose_Bush_v1_Diffuse.jpg',
+                                texture => {
+                                    texture.flipY = false;
+                                    child.material.map = texture;
+                                    child.material.needsUpdate = true;
+                                }
+                            );
+                        }
+                    });
+                    createHeartStructure(obj);
+                    flyrose=obj;
+                });
+        });
+}
+
+
+
+
+
+
+function createHeartStructure(baseModel) {
+    // 生成爱心分布点
+    const points = generateHeartPoints(CONFIG.total);
+
+    points.forEach(pos => {
+        const instance = baseModel.clone();
+        
+        // 克隆材质
+        instance.traverse(child => {
+            if (child.material) child.material = child.material.clone();
+        });
+
+        // 位置设置
+        instance.position.set(
+            pos.x + (Math.random()-0.5)*CONFIG.positionNoise+ CONFIG.translate,
+           CONFIG. yyy_,
+            pos.z + (Math.random()-0.5)*CONFIG.positionNoise+CONFIG.Delta_Z
+        );
+
+        // 随机缩放和旋转
+        const scale = THREE.MathUtils.lerp(
+            CONFIG.scaleRange[0],
+            CONFIG.scaleRange[1],
+            Math.random()
+        );
+        instance.scale.set(scale, scale*1.5, scale);
+        instance.rotation.x=-90; 
+      // instance.translate.x=CONFIG.translate;
+
+        scene.add(instance);
+    });
+
+   // animate();
+}
+
+
+
+function generateHeartPoints(total) {
+    const points = [];
+    const angleStep = (2 * Math.PI) / 100;
+    
+    // 生成爱心轮廓
+    for(let theta = 0; theta < 2 * Math.PI; theta += angleStep) {
+        if(Math.random() > CONFIG.outlineDensity) continue;
+        
+        const pos = heartEquation(theta);
+        points.push({
+            x: pos.x * CONFIG.heartScale,
+            z: pos.z * CONFIG.heartScale
+        });
+    }
+
+    // 生成内部填充点
+    const innerPoints = total - points.length;
+    for(let i = 0; i < innerPoints; i++) {
+        const theta = Math.random() * 2 * Math.PI;
+        const r = Math.sqrt(Math.random()); // 均匀分布
+        
+        const pos = heartEquation(theta, r);
+        points.push({
+            x: pos.x * CONFIG.heartScale * 0.8,
+            z: pos.z * CONFIG.heartScale * 0.8
+        });
+    }
+
+    return points;
+}
+
+// 爱心参数方程（带半径控制）
+function heartEquation(theta, r = 1) {
+    const x = 16 * Math.pow(Math.sin(theta), 3);
+    const z = 13 * Math.cos(theta) 
+              - 5 * Math.cos(2*theta) 
+              - 2 * Math.cos(3*theta) 
+              - Math.cos(4*theta);
+    return {
+        x: x * r / 20,  // 标准化
+        z: -z * r / 20
+    };
+}
+
+
+loadBaseModel();
+
+
+}
+
+
+
+
+
+function  load3(){
+
+  const CONFIG = {
+    total: 85,             // 总实例数
+    heartScale: 150,          // 爱心整体大小
+    outlineDensity: 0.6,    // 轮廓密度
+    innerDensity: 0.4,      // 内部密度
+    positionNoise: 0.2,     // 位置随机偏移
+    scaleRange: [4, 5], // 缩放范围
+    rotationSpeed: 0.01,     // 旋转速度
+    translate:130,
+    Delta_Z: 100
+};
+
+
+    // 添加轨道控制器
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    // 设置光照
+    const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+    const directional = new THREE.DirectionalLight(0xffffff, 1);
+    directional.position.set(5, 5, 5);
+    scene.add(ambient, directional);
+
+    // 加载牡丹模型
+    new THREE.GLTFLoader().load(
+        'models/mudan.glb',
+        (gltf) => {
+            const baseModel = gltf.scene;
+            baseModel.traverse(child => {
+                if (child.isMesh) {
+                    // 优化材质
+                    child.material.metalness = 0;
+                    child.material.roughness = 1;
+                }
+            });
+            
+            mudan=baseModel;
+            createHeartLayout(baseModel);
+        },
+        (xhr) => {//console.log((xhr.loaded / xhr.total * 100) + '% loaded')
+        //  
+         },
+        (error) => console.error(error)
+    );
+
+
+function createHeartLayout(baseModel) {
+    const points = generateHeartPoints(CONFIG.total);
+
+    points.forEach(pos => {
+        const instance = baseModel.clone();
+        
+        // 设置位置
+        instance.position.set(
+            pos.x + (Math.random()-0.5)*CONFIG.positionNoise+CONFIG.translate,
+            0,
+            pos.z + (Math.random()-0.5)*CONFIG.positionNoise+ CONFIG.Delta_Z
+        );
+
+        // 随机缩放和旋转
+        const scale = THREE.MathUtils.lerp(...CONFIG.scaleRange, Math.random());
+        instance.scale.set(scale, scale*1.5, scale);
+        instance.rotation.y = Math.random() * Math.PI * 2;
+        //instance.translate.x= CONFIG. translate;
+
+        scene.add(instance);
+    });
+
+    // 自动调整相机
+    const bbox = new THREE.Box3().setFromObject(scene);
+    const center = bbox.getCenter(new THREE.Vector3());
+   // camera.position.copy(center).add(new THREE.Vector3(0, 5, 15));
+    controls.target.copy(center);
+
+   // animate();
+}
+
+function generateHeartPoints(total) {
+    const points = [];
+    const angleStep = (Math.PI * 2) / 100;
+
+    // 生成轮廓点
+    for(let theta = 0; theta < Math.PI * 2; theta += angleStep) {
+        if(Math.random() > CONFIG.outlineDensity) continue;
+        
+        const pos = getHeartPosition(theta);
+        points.push(pos);
+    }
+
+    // 生成内部点
+    const remaining = total - points.length;
+    for(let i = 0; i < remaining; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const r = Math.sqrt(Math.random()); // 均匀分布
+        const pos = getHeartPosition(theta, r);
+        points.push(pos);
+    }
+
+    return points;
+}
+
+function getHeartPosition(theta, radius = 1) {
+    const x = 16 * Math.pow(Math.sin(theta), 3) * radius;
+    const z = (13 * Math.cos(theta) 
+             - 5 * Math.cos(2*theta) 
+             - 2 * Math.cos(3*theta) 
+             - Math.cos(4*theta));
+    return {
+        x: x * CONFIG.heartScale / 20,
+        z: -z * CONFIG.heartScale / 20 * radius
+    };
+}
+
+
+}
+
+
+
+let  composer;
+
+
+
+
+
+function exploition(){
+
+  const CONFIG = {
+    particleCount: 2000,    // 同时存在的最大粒子数
+    spawnRate: 300,          // 每帧生成粒子数
+    gravity: 0.7,           // 重力强度
+    explosionPower: 3.0,    // 爆发力
+    bloomStrength: 1.5,     // 辉光强度
+    colors: {
+        core: [1.0, 0.9, 0.3],  // 核心颜色 (RGB)
+        edge: [1.0, 0.3, 0.1]   // 边缘颜色 (RGB)
+    }
+};
+
+
+let particles = [];
+let bloomPass;
+
+class SparkParticle {
+    constructor(position) {
+        this.velocity = new THREE.Vector3(
+            (Math.random() - 0.5) * CONFIG.explosionPower,
+            Math.random() * CONFIG.explosionPower,
+            (Math.random() - 0.5) * CONFIG.explosionPower
+        );
+        this.lifetime = 20;
+        this.position = position.clone();
+        this.size = 0.5 + Math.random() * 1.5;
+    }
+
+    update(deltaTime) {
+        this.velocity.y -= CONFIG.gravity * deltaTime;
+        this.position.add(this.velocity.clone().multiplyScalar(deltaTime));
+        this.lifetime -= deltaTime * 0.5;
+        
+        // 地面碰撞检测
+        if (this.position.y < 0) {
+            this.lifetime = Math.min(this.lifetime, 0.2);
+        }
+    }
+}
+
+function init() {
+    // 场景初始化
+   
+
+    // 后期处理链
+    composer = new THREE.EffectComposer(renderer);
+    composer.addPass(new THREE.RenderPass(scene, camera));
+    
+    bloomPass = new THREE.UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        1.5, 0.4, 0.85
+    );
+    composer.addPass(bloomPass);
+
+    // 初始化粒子系统
+    initParticleSystem();
+    
+    // 点击触发火花
+    document.addEventListener('click', createSparkExplosion);
+    createSparkExplosion(); // 初始演示
+}
+
+function initParticleSystem() {
+    // 粒子材质
+    const particleMaterial = new THREE.PointsMaterial({
+        size: 0.5,
+        color: 0xffaa33,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+    });
+
+    // 粒子几何体
+    const particleGeometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(CONFIG.particleCount * 3);
+    const colors = new Float32Array(CONFIG.particleCount * 3);
+    const sizes = new Float32Array(CONFIG.particleCount);
+
+    particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    particleGeometry.setAttribute('size1', new THREE.BufferAttribute(sizes, 1));
+
+    const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+    particleSystem.isParticle=true;
+    scene.add(particleSystem);
+}
+
+function createSparkExplosion(event) {
+    const explosionPos = new THREE.Vector3(
+        event ? (event.clientX / window.innerWidth - 0.5) * 10 : 0,
+        2,
+        event ? (event.clientY / window.innerHeight - 0.5) * 10 : 0
+    );
+
+    for (let i = 0; i < CONFIG.spawnRate; i++) {
+        if (particles.length >= CONFIG.particleCount) break;
+        particles.push(new SparkParticle(explosionPos));
+    }
+
+  
+}
+
+function updateParticles(deltaTime) {
+    const particleSystem = scene.children.find(c => c.isPoints&&c.isParticle);
+    const positions = particleSystem.geometry.attributes.position.array;
+    const colors = particleSystem.geometry.attributes.color.array;
+    const sizes = particleSystem.geometry.attributes.size1.array;
+
+    let validIndex = 0;
+
+
+    particles.forEach((particle, index) => {
+        particle.update(deltaTime);
+        
+        if (particle.lifetime > 0) {
+            // 更新有效粒子
+            positions[validIndex*3] = particle.position.x;
+            positions[validIndex*3+1] = particle.position.y;
+            positions[validIndex*3+2] = particle.position.z;
+            
+            // 颜色插值
+            const color = CONFIG.colors.core.map((c, i) =>
+                c * particle.lifetime + CONFIG.colors.edge[i] * (1 - particle.lifetime)
+            );
+            
+            colors[validIndex*3] = color[0];
+            colors[validIndex*3+1] = color[1];
+            colors[validIndex*3+2] = color[2];
+            
+            sizes[validIndex] = particle.size * particle.lifetime;
+            validIndex++;
+        }
+    });
+
+    // 移除过期粒子
+    particles = particles.slice(0, validIndex);
+    
+    // 更新几何体
+    particleSystem.geometry.attributes.position.needsUpdate = true;
+    particleSystem.geometry.attributes.color.needsUpdate = true;
+    particleSystem.geometry.attributes.size1.needsUpdate = true;
+    particleSystem.geometry.setDrawRange(0, validIndex);
+}
+
+
+init();
+
+return  updateParticles;
+
+}
+
+
+
+
+
+
+
+function  text(){
+
+  const phrases = [
+    "我喜欢你，可以做朋友吗？",
+    "青春是未完待续的诗篇",
+    "心动是藏在眼底的星光",
+    "成功是坚持开出的花朵",
+    "你的微笑是我每日的期待",
+    "梦想是永不熄灭的火种",
+    "相遇是亿万星辰的巧合",
+    "陪伴是最长情的告白",
+    "你眼中有春与秋的斑斓",
+    "坚持终将遇见美好",
+    "爱情是忽然降临的春天",
+    "你是我温柔的例外",
+    "拼搏是青春最美的姿态",
+    "心动不需要理由",
+    "等待只为更好的相遇",
+    "努力是青春的勋章",
+    "你比星光更璀璨",
+    "喜欢是藏不住的风",
+    "坚持是梦想的阶梯",
+    "你值得世间所有美好",
+    "成功需要时间的沉淀",
+    "青春是勇敢的旅程",
+    "爱情是灵魂的共鸣",
+    "未来属于坚持的人"
+];
+
+let controls;
+let currentText = null;
+
+const pinkColors = [0xFF69B4, 0xFF1493, 0xFFB6C1];
+const textConfig = {
+    size: 50,
+    height: 50,
+    curveSegments: 12,
+    bevelEnabled: false
+};
+
+function init() {
+    // 初始化场景
+   
+    
+    // 添加光源
+    const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
+    light.position.set(0, 20, 0);
+    scene.add(light);
+
+    // 加载字体
+    const loader = new THREE.FontLoader();
+    loader.load('DengXian_Bold.json', (font) => {
+        createTextAnimation(font);
+      //  animate();
+    });
+
+    // 添加窗口响应
+   // window.addEventListener('resize', onWindowResize);
+}
+
+function createTextAnimation(font) {
+    // 移除旧文字
+    if (currentText) scene.remove(currentText);
+
+    // 随机选择语句
+    const text = phrases[Math.floor(Math.random() * phrases.length)];
+    
+    //console.log(4);
+
+    // 创建文字几何体
+    const geometry = new THREE.TextGeometry(text, {
+        font: font,
+        size: textConfig.size,
+        height: textConfig.height,
+        curveSegments: textConfig.curveSegments,
+        bevelEnabled: textConfig.bevelEnabled
+    });
+
+    // 创建渐变材质
+    const material = new THREE.MeshPhongMaterial({
+        color: pinkColors[Math.floor(Math.random() * pinkColors.length)],
+        specular: 0xffffff,
+        shininess: 100
+    });
+
+    // 创建网格
+    const mesh = new THREE.Mesh(geometry, material);
+    geometry.computeBoundingBox();
+    const centerOffset = -0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
+    mesh.position.x = centerOffset;
+    
+
+    
+    // 添加绽放动画
+    mesh.scale.set(0,0,0);
+    mesh.position.y =300;
+    mesh.position.z=-130
+    currentText = mesh;
+    scene.add(mesh);
+
+    // 创建动画
+    new TWEEN.Tween(mesh.scale)
+        .to({ x: 1, y: 1, z: 1 }, 1200)
+        .easing(TWEEN.Easing.Elastic.Out)
+        .start();
+
+    new TWEEN.Tween(mesh.position)
+        .to({ y: 230, z:-100}, 1000)
+        .easing(TWEEN.Easing.Bounce.Out)
+        .start();
+
+    // 3秒后切换新文字
+    setTimeout(() => createTextAnimation(font), 1500);
+}
+
+
+
+init();
+
+
+}
+
+
+
+
+
+
+
+var flyrose=null;
+
+
+
+
+
+var groups=[];
+
+  
+
+function load4(){
+
+const CONFIG = {
+total: 300,             // 总实例数量
+heartScale: 200,          // 爱心整体缩放
+outlineDensity: 0.9,    // 轮廓线密度
+innerDensity: 0.8,      // 内部填充密度
+positionNoise: 0.15,    // 位置随机偏移量
+scaleRange: [0.6, 0.8] ,// 模型缩放范围
+translate:0,
+Delta_Z:100,
+zzz_:-20,
+Delta_y:100,
+maxz:80,
+maxLifeTime:40,
+zSpeed:5,
+Frence:30,
+maxH:500
+};
+
+
+
+ function loadBaseModel() {
+        if (flyrose) {
+            createHeartStructure(CONFIG.total); // 直接使用缓存模型
+        }
+
+        new THREE.MTLLoader()
+        .load('models/10452_Rose_Bush_v1_Iteration2.mtl', materials => {
+            materials.preload();
+            
+            new THREE.OBJLoader()
+                .setMaterials(materials)
+                .load('models/10452_Rose_Bush_v1_Iteration2.obj', obj => {
+                    obj.traverse(child => {
+                        if (child.isMesh) {
+                            new THREE.TextureLoader().load(
+                                'models/10452_Rose_Bush_v1_Diffuse.jpg',
+                                texture => {
+                                    texture.flipY = false;
+                                    child.material.map = texture;
+                                    child.material.needsUpdate = true;
+                                }
+                            );
+                        }
+                    });
+
+                    flyrose=obj;
+                     createHeartStructure(CONFIG.total);
+                });
+        });
+    }
+
+
+
+
+function createHeartStructure(count) {
+// 生成爱心分布点
+
+let   g=new THREE.Group();
+
+const points = generateHeartPoints(count);
+
+points.forEach(pos => {
+    const instance = flyrose.clone();
+    
+    // 克隆材质
+    instance.traverse(child => {
+        if (child.material) child.material = child.material.clone();
+    });
+
+    // 位置设置
+    instance.position.set(
+        pos.x + (Math.random()-0.5)*CONFIG.positionNoise+ CONFIG.translate,
+        pos.y + (Math.random()-0.5)*CONFIG.positionNoise+CONFIG.Delta_y,
+        CONFIG. zzz_
+    );
+
+    // 随机缩放和旋转
+    const scale = THREE.MathUtils.lerp(
+        CONFIG.scaleRange[0],
+        CONFIG.scaleRange[1],
+        Math.random()
+    );
+    instance.scale.set(scale, scale, scale*1.5);
+    //instance.rotation.x=-90; 
+  // instance.translate.x=CONFIG.translate;
+ 
+  
+   instance.userData = {
+            life:(Math.random()+0.4)* CONFIG.maxLifeTime,      // 生命周期倒计时
+            velocity: {
+                x:  0, // (Math.random()-0.5)*0.1, // X轴随机速度
+                y: 0,//Math.random()*0.3,       // Y轴基础上升速度
+                z: (Math.random()+0.4)*CONFIG.zSpeed  // Z轴随机速度
+            },
+            rotationSpeed: 3,//Math.random()*0.02 + 0.01, // 随机旋转速度
+            opacity: 1.0                    // 透明度控制
+        };
+
+   g.add(instance);
+
+    //scene.add(instance);
+});
+
+
+groups.push({group:g, maxz:  (Math.random()+0.4)* CONFIG.maxz });
+scene.add(g);
+
+}
+
+
+
+
+
+function generateHeartPoints(total) {
+const points = [];
+const angleStep = (2 * Math.PI) / total;
+
+// 生成爱心轮廓
+for(let theta = 0; theta < 2 * Math.PI; theta += angleStep) {
+    // if(Math.random() > CONFIG.outlineDensity) continue;
+    
+    const pos = heartEquation(theta);
+    points.push({
+        x: pos.x * CONFIG.heartScale,
+        y: pos.y * CONFIG.heartScale
+    });
+}
+
+// // 生成内部填充点
+// const innerPoints = total - points.length;
+// for(let i = 0; i < innerPoints; i++) {
+//     const theta = Math.random() * 2 * Math.PI;
+//     const r = Math.sqrt(Math.random()); // 均匀分布
+    
+//     const pos = heartEquation(theta, r);
+//     points.push({
+//         x: pos.x * CONFIG.heartScale * 0.8,
+//         y: pos.y * CONFIG.heartScale * 0.8
+//     });
+// }
+
+return points;
+}
+
+
+
+
+// 爱心参数方程（带半径控制）
+function heartEquation(theta, r = 1) {
+const x = 16 * Math.pow(Math.sin(theta), 3);
+const y = 13 * Math.cos(theta) 
+          - 5 * Math.cos(2*theta) 
+          - 2 * Math.cos(3*theta) 
+          - Math.cos(4*theta);
+return {
+    x: x * r / 20,  // 标准化
+    y: y * r / 20
+};
+}
+
+
+
+function disposeGroup(group) {
+        group.traverse(child => {
+            if (child.isMesh) {
+                child.geometry.dispose();
+                if (child.material) {
+                    Object.values(child.material).forEach(prop => {
+                        if (prop instanceof THREE.Texture) {
+                            prop.dispose();
+                        }
+                    });
+                    child.material.dispose();
+                }
+            }
+        });
+    }
+
+
+
+
+
+function update_one_group(group){
+
+  group.children.forEach(instance => {
+            // 访问自定义数据
+            const data = instance.userData;
+            
+            // 生命周期递减
+            data.life--;
+            
+            //console.log(data.life);
+
+            // 动态修改属性
+            if (data.life <= 0) {
+                // 标记需要删除的对象
+                data.shouldRemove = true;
+            } else {
+                // 根据数据更新位置
+                instance.position.x += data.velocity.x;
+                instance.position.y += data.velocity.y;
+                instance.position.z += data.velocity.z;
+                
+                if(instance.position.z>=data.maxH)
+                 data.shouldRemove=true;
+
+                // 更新旋转
+                instance.rotation.z += data.rotationSpeed;
+                
+                // 透明度渐变
+                // data.opacity = Math.min(data.life / CONFIG.maxLifecycle, 1.0);
+                // instance.traverse(child => {
+                //     if (child.isMesh) {
+                //         child.material.opacity = data.opacity;
+                //     }
+                // });
+            }
+        });
+
+        // 清理需要删除的对象
+        group.children = group.children.filter(instance => {
+            if (instance.userData.shouldRemove) {
+                disposeInstance(instance); // 执行资源清理
+                return false;
+            }
+            return true;
+        });
+
+   
+}
+
+
+function disposeInstance(instance) {
+    instance.traverse(child => {
+        if (child.isMesh) {
+            child.geometry.dispose();
+            if (Array.isArray(child.material)) {
+                child.material.forEach(m => disposeMaterial(m));
+            } else {
+                disposeMaterial(child.material);
+            }
+        }
+    });
+}
+
+function disposeMaterial(material) {
+    Object.keys(material).forEach(prop => {
+        const value = material[prop];
+        if (value instanceof THREE.Texture) {
+            value.dispose();
+        }
+    });
+    material.dispose();
+}
+
+
+
+
+
+function  update(step){
+
+   
+  if(step% CONFIG.Frence ==0)
+     loadBaseModel();
+
+    let new_one=[];
+  
+
+  for(let i=0;i<groups.length;i++)
+     {
+      groups[i].maxz--;
+      
+      if(groups[i].maxz<=0)
+        { scene.remove(groups[i].group);
+          disposeGroup(groups[i].group);
+          continue;
+        }
+        
+        update_one_group(groups[i].group);
+        new_one.push(groups[i]);
+     }
+
+    groups=new_one;
+     
+}
+
+
+load4.update=update;
+
+
+update(0);
+
+}
+
+
+
+var mudan=null;
+
+var mudan_groups=[];
+
+
+function load5(){
+
+const CONFIG = {
+total: 20,             // 总实例数量
+              // 爱心整体缩放
+outlineDensity: 0.9,    // 轮廓线密度
+innerDensity: 0.8,      // 内部填充密度
+positionNoise: 0.15,    // 位置随机偏移量
+scaleRange: [0.6, 0.8] ,// 模型缩放范围
+translate:0,
+Delta_Z:0,
+zzz_:-20,
+yyy_:0,
+Delta_y:0,
+maxz:80,
+maxLifeTime:40,
+zSpeed:5,
+Frence:30,
+maxH:500,
+R:200
+};
+
+
+
+
+ function loadBaseModel() {
+        if (mudan) {
+            createCircleStructure(CONFIG.total); // 直接使用缓存模型
+        }
+
+      
+    // 加载牡丹模型
+    new THREE.GLTFLoader().load(
+        'models/mudan.glb',
+        (gltf) => {
+            const baseModel = gltf.scene;
+            baseModel.traverse(child => {
+                if (child.isMesh) {
+                    // 优化材质
+                    child.material.metalness = 0;
+                    child.material.roughness = 1;
+                }
+            });
+            
+            mudan=baseModel;
+            createCircleStructure(CONFIG.total); 
+        },
+        (xhr) => {//console.log((xhr.loaded / xhr.total * 100) + '% loaded')
+        //  
+         },
+        (error) => console.error(error)
+    );
+
+    }
+
+
+
+
+
+function  createCircleStructure(count) {
+// 生成爱心分布点
+
+let   g=new THREE.Group();
+
+const points = generateCirclePoints(count);
+
+points.forEach(pos => {
+    const instance = mudan.clone();
+    
+    // 克隆材质
+    // instance.traverse(child => {
+    //     if (child.material) child.material = child.material.clone();
+    // });
+
+    // 位置设置
+    instance.position.set(
+        pos.x + 0,//(Math.random()-0.5)*CONFIG.positionNoise+ CONFIG.translate,
+        CONFIG. yyy_,
+        pos.z +0// (Math.random()-0.5)*CONFIG.positionNoise+CONFIG.Delta_z,
+    );
+
+    
+
+
+    // 随机缩放和旋转
+    const scale = THREE.MathUtils.lerp(
+        CONFIG.scaleRange[0],
+        CONFIG.scaleRange[1],
+        Math.random()
+    );
+
+    instance.scale.set(scale, scale*4, scale);
+    //instance.rotation.x=-90; 
+  // instance.translate.x=CONFIG.translate;
+ 
+  
+
+   instance.userData = {
+            life:(Math.random()+0.4)* CONFIG.maxLifeTime,      // 生命周期倒计时
+            velocity: {
+                x:  0, // (Math.random()-0.5)*0.1, // X轴随机速度
+                y: 0,//Math.random()*0.3,       // Y轴基础上升速度
+                z: 0// (Math.random()+0.4)*CONFIG.zSpeed  // Z轴随机速度
+            },
+            rotationSpeed: 3,//Math.random()*0.02 + 0.01, // 随机旋转速度
+            opacity: 1.0                    // 透明度控制
+        };
+
+   g.add(instance);
+
+    //scene.add(instance);
+});
+
+
+
+
+ mudan_groups.push({group:g, maxz:  (Math.random()+0.4)* CONFIG.maxz });
+scene.add(g);
+
+}
+
+
+
+
+
+function generateCirclePoints (total) {
+const points = [];
+const angleStep = (2 * Math.PI) / total;
+
+for(let theta = 0; theta < 2 * Math.PI; theta += angleStep) {
+    // if(Math.random() > CONFIG.outlineDensity) continue;
+  
+    points.push({
+        x: CONFIG.R*Math.cos(theta),
+        z:  CONFIG.R*Math.sin(theta)
+    });
+}
+
+
+return points;
+}
+
+
+
+
+function disposeGroup(group) {
+        group.traverse(child => {
+            if (child.isMesh) {
+                child.geometry.dispose();
+                if (child.material) {
+                    Object.values(child.material).forEach(prop => {
+                        if (prop instanceof THREE.Texture) {
+                            prop.dispose();
+                        }
+                    });
+                    child.material.dispose();
+                }
+            }
+        });
+    }
+
+
+
+
+
+function update_one_group(group){
+
+  group.children.forEach(instance => {
+            // 访问自定义数据
+            const data = instance.userData;
+            
+            // 生命周期递减
+           // data.life--;
+            
+            //console.log(data.life);
+
+            // 动态修改属性
+            // if (data.life <= 0) {
+            //     // 标记需要删除的对象
+            //     //data.shouldRemove = true;
+            // } else {
+                // 根据数据更新位置
+                instance.position.x += data.velocity.x;
+                instance.position.y += data.velocity.y;
+                instance.position.z += data.velocity.z;
+                
+                // if(instance.position.z>=data.maxH)
+                //  data.shouldRemove=true;
+
+                // 更新旋转
+                instance.rotation.y += data.rotationSpeed;
+                
+                //console.log(55555);
+                // 透明度渐变
+                // data.opacity = Math.min(data.life / CONFIG.maxLifecycle, 1.0);
+                // instance.traverse(child => {
+                //     if (child.isMesh) {
+                //         child.material.opacity = data.opacity;
+                //     }
+                // });
+            //   }
+
+
+        });
+
+        // 清理需要删除的对象
+        // group.children = group.children.filter(instance => {
+        //     if (instance.userData.shouldRemove) {
+        //         disposeInstance(instance); // 执行资源清理
+        //         return false;
+        //     }
+        //     return true;
+        // });
+
+   
+}
+
+
+
+
+function disposeInstance(instance) {
+    instance.traverse(child => {
+        if (child.isMesh) {
+            child.geometry.dispose();
+            if (Array.isArray(child.material)) {
+                child.material.forEach(m => disposeMaterial(m));
+            } else {
+                disposeMaterial(child.material);
+            }
+        }
+    });
+}
+
+function disposeMaterial(material) {
+    Object.keys(material).forEach(prop => {
+        const value = material[prop];
+        if (value instanceof THREE.Texture) {
+            value.dispose();
+        }
+    });
+    material.dispose();
+}
+
+
+
+
+
+function  update(step){
+
+   if(load5.ok)
+    return ;
+
+  if(mudan_groups.length<=0)
+     { loadBaseModel();
+     }
+
+    let new_one=[];
+  
+
+  for(let i=0;i<mudan_groups.length;i++)
+     {
+      //groups[i].maxz--;
+      
+      if( mudan_groups [i].maxz<0)
+        { scene.remove(mudan_groups[i].group);
+          disposeGroup(mudan_groups[i].group);
+          continue;
+        }
+        
+        update_one_group(mudan_groups[i].group);
+        new_one.push(mudan_groups[i]);
+     }
+
+     mudan_groups =new_one;
+
+     if(mudan_groups.length>0)
+       load5.ok=true;
+     
+}
+
+
+
+load5.update=update;
+
+update(0);
+
+}
+
+
+
+
+
+      load2();
+
+      load3();
+      
+      text();
+
+      load4();
+       //load5();
+
+
+     
+      //let updateParticles =  exploition ();
+
+        let step=0;
+
+        // 动画循环
+        function animate() {
+            requestAnimationFrame(animate);
+            
+           step++;
+          vortex.update_(step);
+           
+          heart.update_(step);
+
+          //heartSystem.update(step);
+            
+            // 摄像机缓慢环绕
+            // camera.position.x = 10 * Math.cos(performance.now()/5000);
+            // camera.position.z = 10 * Math.sin(performance.now()/5000);
+        
+
+            TWEEN.update();
+
+            load4.update(step);
+          //  load5.update(step);
+
+          // if(groups.length>0)
+          //   groups[0].traverse(child => {
+          //   if (child.isMesh) {
+          //        child.rotation.z+=2;
+          //        child.position.z+=1;
+          //   }
+          // });
+
+
+            renderer.render(scene, camera);
+            //composer.render();
+          //  updateParticles(step*30);
+        }
+
+        // 窗口自适应
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
